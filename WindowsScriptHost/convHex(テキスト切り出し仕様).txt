@@ -1,0 +1,47 @@
+Windows Script Host（WSH)を使用した簡易的に、ROMデータを作成する。
+作成するHEXデータは、画面に出力されるため、リダイレクト機能を使ってファイル化する。
+
+windowsターミナルから、以下のコマンドラインでWSHを起動する.
+
+cscript convHex.vbs XXXX.HEX > fileName.txt
+
+fileName.txtファイルの先頭には、cscript起動時のシステムメッセージが入っている為
+エディタで編集して、削除すること。
+
+＜システムメッセージ例＞
+Microsoft (R) Windows Script Host Version 5.812
+Copyright (C) Microsoft Corporation. All rights reserved.
+
+（注）
+convHex.vbsと、インテルHEXファイルは同じフォルダに存在する必要がある。
+
+convHex.vbsは、ROMデータを切り出すために、以下の制限をも受けている。
+
+・データレコードのみに対応する。
+・アドレスレコード、開始アドレスレコード、ファイル終了レコードは無視する
+・z80はアドレス空間が64Kのため、データレコードのローケーションアドレスのみで
+　全空間を指定できるため、アドレスレコードを生成することを想定していない。
+・データレコードは連続したロケーションアドレスを想定している。
+　不連続なロケーションになる場合には、アセンブラで連続するようにDB、DW、DS等の
+　疑似命令を使って調整する。
+
+	（例）
+
+		org 8000h
+		jmp rx1
+
+		org 8010h
+		jmp rx2
+
+	この場合、
+
+		org 8000h
+		jmp rx1
+
+		ds 8010h - $, 0ffh	;8003h～800fhまで0FFhで埋める
+
+		org 8010h
+		jmp rx2
+	
+	となる。
+

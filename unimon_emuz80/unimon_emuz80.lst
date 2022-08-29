@@ -1,0 +1,2251 @@
+0000                    ;;;
+0000                    ;;; Universal Monitor for Zilog Z80
+0000                    ;;;   Copyright (C) 2019,2020,2021 Haruo Asano
+0000                    ;;;
+0000
+0000                    ;;;
+0000                    ;;; Options
+0000                    ;;;
+0000
+0001                    USE_REGCMD = 1			; R(egister) command and related functions
+0000
+0001                    USE_NEWAPI = 1			; New API (RST 30H)
+0000
+0000                    ;;; Constants
+000D                    CR	EQU	0DH
+000A                    LF	EQU	0AH
+0008                    BS	EQU	08H
+007F                    DEL	EQU	7FH
+0020                    BUFLEN	equ	32
+0000                    ;;;
+0000                    ;;; Memory
+0000                    ;;;
+0000                    ;; EMUZ80_Q84 dipend
+FF00                    UARTDR	EQU	0FF00H	; UART DATA REGISTOR
+FF01                    UARTCR	EQU	0FF01H	; UART CONTROL REGISTOR
+EF00                    WORK_B	equ	0EF00H
+EFFF                    STACK	equ	0EFFFH
+C000                    RAM_B	equ	0C000H	;EMUZ80_Q84 RAM base address
+1000                    BASIC_TOP	equ	1000H
+1000                    BASIC_CST	equ	1000H	; basic cold start
+1003                    BASIC_WST	equ	1003H	; basic warm start
+0000
+0080                    ENTRY	EQU	0080H		; Entry point
+0000
+0000                    ;;;
+0000                    ;;; ROM area
+0000                    ;;;
+0000
+0000                    	ORG	0000H
+0000    C3 00 01        	JP	CSTART
+0003    C3 3E 01        	JP	WSTART
+0006
+0006    00 00           	ds	0008H - $, 00H
+0008                    ;	ORG	0008H	;(RST 08H)
+0008    C3 E4 0B        	JP	CONOUT
+000B
+000B    00 00 00 00     	ds	0010H - $, 00H
+000F    00
+0010                    ;	ORG	0010H	(RST 10H)
+0010    C3 D3 0B        	JP	CONIN
+0013
+0013    00 00 00 00     	ds	0018H - $, 00H	; nop
+0017    00
+0018                    ;	ORG	0018H	(RST 18H)
+0018    C3 DE 0B        	JP	CONST
+001B
+001B    00 00 00 00     	ds	0030H - $, 00H	; nop
+001F    00 00 00 00
+0023    00 00 00 00
+0027    00 00 00 00
+002B    00 00 00 00
+002F    00
+0030                    ;	ORG	0030H
+0030    C3 D6 08        	JP	RST30H
+0033
+0033    00 00 00 00     	ds	0038H - $, 00H	; nop
+0037    00
+0038                    ;	ORG	0038H
+0038    C3 01 09        	JP	RST38H
+003B
+003B                    	;;
+003B                    	;; Entry point
+003B                    	;;
+003B
+003B    00 00 00 00     	ds	ENTRY -$, 00H
+003F    00 00 00 00
+0043    00 00 00 00
+0047    00 00 00 00
+004B    00 00 00 00
+004F    00 00 00 00
+0053    00 00 00 00
+0057    00 00 00 00
+005B    00 00 00 00
+005F    00 00 00 00
+0063    00 00 00 00
+0067    00 00 00 00
+006B    00 00 00 00
+006F    00 00 00 00
+0073    00 00 00 00
+0077    00 00 00 00
+007B    00 00 00 00
+007F    00
+0080                    ;	ORG	ENTRY		; Cold start
+0080                    E_CSTART:
+0080    C3 00 01        	JP	CSTART
+0083
+0083    00 00 00 00     	ds	ENTRY+8 - $, 00H
+0087    00
+0088                    ;	ORG	ENTRY+8		; Warm start
+0088                    E_WSTART:
+0088    C3 3E 01        	JP	WSTART
+008B
+008B    00 00 00 00     	ds	ENTRY+16 - $, 00H
+008F    00
+0090                    ;	ORG	ENTRY+16	; Console output
+0090                    E_CONOUT:
+0090    C3 E4 0B        	JP	CONOUT
+0093
+0093    00 00 00 00     	ds	ENTRY+24 -$, 00H
+0097    00
+0098                    ;	ORG	ENTRY+24	; (Console) String output
+0098                    E_STROUT:
+0098    C3 EA 07        	JP	STROUT
+009B
+009B    00 00 00 00     	ds	ENTRY+32 -$, 00H
+009F    00
+00A0                    ;	ORG	ENTRY+32	; Console input
+00A0                    E_CONIN:
+00A0    C3 D3 0B        	JP	CONIN
+00A3
+00A3    00 00 00 00     	ds	ENTRY+40 -$, 00H
+00A7    00
+00A8                    ;	ORG	ENTRY+40	; Console status
+00A8                    E_CONST:
+00A8    C3 DE 0B        	JP	CONST
+00AB
+00AB                    	;;
+00AB                    	;;
+00AB                    	;;
+00AB
+00AB    00 00 00 00     	ds	0100H - $, 00H
+00AF    00 00 00 00
+00B3    00 00 00 00
+00B7    00 00 00 00
+00BB    00 00 00 00
+00BF    00 00 00 00
+00C3    00 00 00 00
+00C7    00 00 00 00
+00CB    00 00 00 00
+00CF    00 00 00 00
+00D3    00 00 00 00
+00D7    00 00 00 00
+00DB    00 00 00 00
+00DF    00 00 00 00
+00E3    00 00 00 00
+00E7    00 00 00 00
+00EB    00 00 00 00
+00EF    00 00 00 00
+00F3    00 00 00 00
+00F7    00 00 00 00
+00FB    00 00 00 00
+00FF    00
+0100                    ;	ORG	0100H
+0100                    CSTART:
+0100    F3              	DI
+0101    31 FF EF        	LD	SP,STACK
+0104
+0104                    	;; CPU identification
+0104    AF              	XOR	A
+0105    32 2B EF        	LD	(PSPEC),A
+0108
+0108    CD D2 0B        	CALL    INIT
+010B
+010B    21 00 C0        	LD	HL,RAM_B
+010E    22 20 EF        	LD	(DSADDR),HL
+0111    22 27 EF        	LD	(SADDR),HL
+0114    22 25 EF        	LD	(GADDR),HL
+0117    3E 49           	LD	A,'I'
+0119    32 29 EF        	LD	(HEXMOD),A
+011C    AF              	XOR	A
+011D    32 2D EF        	LD	(IOPAGE),A
+0120
+0120                    	;; Initialize register value
+0120    AF              	XOR	A
+0121    21 2E EF        	LD	HL,REG_B
+0124    06 1A           	LD	B,REG_E-REG_B
+0126                    IR0:
+0126    77              	LD	(HL),A
+0127    23              	INC	HL
+0128    10 FC           	DJNZ	IR0
+012A
+012A    21 FF EF        	LD	HL,STACK
+012D    22 42 EF        	LD	(REGSP),HL
+0130
+0130    06 64           	LD	B,100
+0132                    TL:
+0132    AF              	XOR	A
+0133    CD E4 0B        	CALL	CONOUT
+0136    10 FA           	DJNZ	TL
+0138
+0138                    	;; Opening message
+0138    21 4A 09        	LD	HL,OPNMSG
+013B    CD EA 07        	CALL	STROUT
+013E
+013E                    WSTART:
+013E    21 6F 09        	LD	HL,PROMPT
+0141    CD EA 07        	CALL	STROUT
+0144    CD 40 08        	CALL	GETLIN
+0147    21 00 EF        	LD	HL,INBUF
+014A    CD 8C 08        	CALL	SKIPSP
+014D    CD 93 08        	CALL	UPPER
+0150    B7              	OR	A
+0151    28 EB           	JR	Z,WSTART
+0153
+0153    FE 44           	CP	'D'
+0155    CA 63 02        	JP	Z,DUMP
+0158    FE 47           	CP	'G'
+015A    CA 6C 03        	JP	Z,GO
+015D    FE 53           	CP	'S'
+015F    CA BD 03        	JP	Z,SETM
+0162
+0162    FE 4C           	CP	'L'
+0164    CA 24 04        	JP	Z,LOADH
+0167    FE 50           	CP	'P'
+0169    CA F5 04        	JP	Z,SAVEH
+016C
+016C    FE 49           	CP	'I'
+016E    CA D2 05        	JP	Z,PIN
+0171    FE 4F           	CP	'O'
+0173    CA 64 06        	JP	Z,POUT
+0176    FE 5A           	CP	'Z'
+0178    CA FC 06        	JP	Z,PBANK
+017B
+017B    FE 52           	CP	'R'
+017D    CA 2A 07        	JP	Z,REG
+0180    FE 23           	cp	'#'
+0182    CA 8D 01        	JP	Z,Launcher
+0185                    ERR:
+0185    21 8C 09        	LD	HL,ERRMSG
+0188    CD EA 07        	CALL	STROUT
+018B    18 B1           	JR	WSTART
+018D
+018D                    ;;
+018D                    ;; Launch appended program
+018D                    ;;
+018D                    Launcher:
+018D    23              	INC	HL
+018E    CD 8C 08        	CALL	SKIPSP		; A <- next char
+0191    CD 93 08        	CALL	UPPER
+0194    B7              	OR	A
+0195    28 EE           	JR	Z,ERR
+0197
+0197                    	; check L or number
+0197
+0197    FE 4C           	cp	'L'
+0199    28 1B           	JR	Z,LST_PRG	; list append program
+019B
+019B                    	; check number
+019B
+019B    CD D4 01        	call	GET_NUM
+019E    38 E5           	JR	C, ERR
+01A0
+01A0                    	; A <- append program No.
+01A0
+01A0    3D              	DEC	A	; 0 <= A <= 0FH
+01A1    17              	RLA		; A = A * 2
+01A2    16 00           	LD	D, 0
+01A4    5F              	LD	E, A
+01A5    21 09 02        	LD	HL, ApendTBL
+01A8    19              	ADD	HL, DE	; get lanch address point
+01A9    5E              	LD	E, (HL)
+01AA    23              	INC	HL
+01AB    56              	LD	D, (HL)	; DE : JUMP POINT
+01AC
+01AC                    	; Jump to append program
+01AC
+01AC    EB              	EX	DE, HL
+01AD    5E              	LD	E, (HL)
+01AE    23              	INC	HL
+01AF    56              	LD	D, (HL)	; DE : jump address
+01B0    7A              	LD	A, D
+01B1    B3              	OR	E	; address check
+01B2    28 D1           	JR	Z,ERR	; jump address NULL
+01B4    EB              	EX	DE, HL
+01B5    E9              	JP	(HL)	; lanch append program
+01B6
+01B6                    	; List out append program
+01B6                    LST_PRG:
+01B6                    	; get address to DE
+01B6    21 09 02        	LD	HL, ApendTBL
+01B9
+01B9                    LST_PRG1:
+01B9    5E              	LD	E, (HL)
+01BA    23              	INC	HL
+01BB    56              	LD	D, (HL)
+01BC    23              	INC	HL
+01BD
+01BD    D5              	PUSH	DE
+01BE    DD E1           	POP	IX	; IX <-DE
+01C0    DD 7E 00        	LD	A, (IX+0)
+01C3    DD B6 01        	OR	(IX+1)
+01C6    28 09           	JR	Z, LST_END
+01C8    13              	INC	DE
+01C9    13              	INC	DE	; get string address
+01CA
+01CA    EB              	EX	DE, HL
+01CB    CD EA 07        	CALL	STROUT
+01CE    EB              	EX	DE, HL
+01CF    18 E8           	JR	LST_PRG1
+01D1
+01D1                    LST_END:
+01D1    C3 3E 01        	JP	WSTART
+01D4
+01D4                    	; get number
+01D4                    	;
+01D4                    	; Return
+01D4                    	; CF =1 : ILL Error
+01D4                    	; CF=0 : A = 1 - 16
+01D4
+01D4                    GET_NUM:
+01D4    F5              	PUSH	AF
+01D5    AF              	XOR	A		; Initialize C
+01D6    4F              	LD	C, A		; C: Calculation result
+01D7    F1              	POP	AF
+01D8
+01D8                    GET_NUM0:
+01D8    CD FA 01        	CALL	GET_BI
+01DB    D8              	RET	C
+01DC
+01DC                    	; multiply by 10
+01DC    47              	LD	B, A		; A : get input binary
+01DD    79              	LD	A, C
+01DE    07              	RLCA
+01DF    07              	RLCA
+01E0    07              	RLCA
+01E1    81              	ADD	A, C
+01E2    81              	ADD	A, C		; a = a * 10
+01E3
+01E3    80              	ADD	A, B		; plus Low column
+01E4    4F              	LD	C, A		; c = a*10 + b
+01E5
+01E5    23              	INC	HL
+01E6    CD 8C 08        	CALL	SKIPSP		; A <- next char
+01E9    CD 93 08        	CALL	UPPER
+01EC    B7              	OR	A
+01ED    28 02           	JR	Z, NUM_1	; ZF=1, ok! keyend
+01EF    18 E7           	JR	GET_NUM0
+01F1
+01F1                    NUM_1:
+01F1                    	; check number
+01F1    79              	LD	A, C
+01F2    FE 11           	CP	(lanch1 - ApendTBL)/2 +1	; a < 17 ?
+01F4    30 11           	JR	NC, UP_BI
+01F6    B7              	OR	A				; check '0'
+01F7    28 0E           	JR	Z, UP_BI
+01F9    C9              	RET					; A : list number
+01FA                    ;
+01FA                    ; Make binary to A
+01FA                    ; ERROR if CF=1
+01FA                    ;
+01FA                    GET_BI:
+01FA    B7              	OR	A
+01FB    28 0A           	JR	Z, UP_BI
+01FD    FE 30           	CP	'0'
+01FF    D8              	RET	C
+0200
+0200    FE 3A           	CP	'9'+1	; ASCII':'
+0202    30 03           	JR	NC, UP_BI
+0204    D6 30           	SUB	'0'	; Make binary to A
+0206    C9              	RET
+0207
+0207                    UP_BI:
+0207    37              	SCF		; Set CF
+0208    C9              	RET
+0209
+0209                    ; Append program launch table
+0209                    ;
+0209                    ApendTBL:
+0209    29 02           	dw	lanch1
+020B    45 02           	dw	lanch2
+020D    61 02           	dw	lanch3
+020F    61 02           	dw	lanch4
+0211    61 02           	dw	lanch5
+0213    61 02           	dw	lanch6
+0215    61 02           	dw	lanch7
+0217    61 02           	dw	lanch8
+0219    61 02           	dw	lanch9
+021B    61 02           	dw	lanch10
+021D    61 02           	dw	lanch11
+021F    61 02           	dw	lanch12
+0221    61 02           	dw	lanch13
+0223    61 02           	dw	lanch14
+0225    61 02           	dw	lanch15
+0227    61 02           	dw	lanch16
+0229
+0229                    lanch1:
+0229    00 10           	dw	BASIC_CST
+022B    31 2E 20 42     	DB	"1. BASIC4.7b Cold Start",CR,LF,00H
+022F    41 53 49 43
+0233    34 2E 37 62
+0237    20 43 6F 6C
+023B    64 20 53 74
+023F    61 72 74 0D
+0243    0A 00
+0245                    lanch2:
+0245    03 10           	dw	BASIC_WST
+0247    32 2E 20 42     	DB	"2. BASIC4.7b Warm Start",CR,LF,00H
+024B    41 53 49 43
+024F    34 2E 37 62
+0253    20 57 61 72
+0257    6D 20 53 74
+025B    61 72 74 0D
+025F    0A 00
+0261
+0261                    lanch3:
+0261                    lanch4:
+0261                    lanch5:
+0261                    lanch6:
+0261                    lanch7:
+0261                    lanch8:
+0261                    lanch9:
+0261                    lanch10:
+0261                    lanch11:
+0261                    lanch12:
+0261                    lanch13:
+0261                    lanch14:
+0261                    lanch15:
+0261                    lanch16:
+0261    00 00           	dw	0
+0263
+0263                    ;;;
+0263                    ;;; Dump memory
+0263                    ;;;
+0263
+0263                    DUMP:
+0263    23              	INC	HL
+0264    CD 8C 08        	CALL	SKIPSP
+0267    CD 9C 08        	CALL	RDHEX		; 1st arg.
+026A    79              	LD	A,C
+026B    B7              	OR	A
+026C    20 14           	JR	NZ,DP0
+026E                    	;; No arg.
+026E    CD 8C 08        	CALL	SKIPSP
+0271    7E              	LD	A,(HL)
+0272    B7              	OR	A
+0273    C2 85 01        	JP	NZ,ERR
+0276    2A 20 EF        	LD	HL,(DSADDR)
+0279    01 80 00        	LD	BC,128
+027C    09              	ADD	HL,BC
+027D    22 22 EF        	LD	(DEADDR),HL
+0280    18 32           	JR	DPM
+0282
+0282                    	;; 1st arg. found
+0282                    DP0:
+0282    ED 53 20 EF     	LD	(DSADDR),DE
+0286    CD 8C 08        	CALL	SKIPSP
+0289    7E              	LD	A,(HL)
+028A    FE 2C           	CP	','
+028C    28 0D           	JR	Z,DP1
+028E    B7              	OR	A
+028F    C2 85 01        	JP	NZ,ERR
+0292                    	;; No 2nd arg.
+0292    21 80 00        	LD	HL,128
+0295    19              	ADD	HL,DE
+0296    22 22 EF        	LD	(DEADDR),HL
+0299    18 19           	JR	DPM
+029B                    DP1:
+029B    23              	INC	HL
+029C    CD 8C 08        	CALL	SKIPSP
+029F    CD 9C 08        	CALL	RDHEX
+02A2    CD 8C 08        	CALL	SKIPSP
+02A5    79              	LD	A,C
+02A6    B7              	OR	A
+02A7    CA 85 01        	JP	Z,ERR
+02AA    7E              	LD	A,(HL)
+02AB    B7              	OR	A
+02AC    C2 85 01        	JP	NZ,ERR
+02AF    13              	INC	DE
+02B0    ED 53 22 EF     	LD	(DEADDR),DE
+02B4                    DPM:
+02B4                    	;; DUMP main
+02B4    2A 20 EF        	LD	HL,(DSADDR)
+02B7    3E F0           	LD	A,0F0H
+02B9    A5              	AND	L
+02BA    6F              	LD	L,A
+02BB    AF              	XOR	A
+02BC    32 24 EF        	LD	(DSTATE),A
+02BF                    DPM0:
+02BF    E5              	PUSH	HL
+02C0    CD E6 02        	CALL	DPL
+02C3    E1              	POP	HL
+02C4    01 10 00        	LD	BC,16
+02C7    09              	ADD	HL,BC
+02C8    CD DE 0B        	CALL	CONST
+02CB    20 10           	JR	NZ,DPM1
+02CD    3A 24 EF        	LD	A,(DSTATE)
+02D0    FE 02           	CP	2
+02D2    38 EB           	JR	C,DPM0
+02D4    2A 22 EF        	LD	HL,(DEADDR)
+02D7    22 20 EF        	LD	(DSADDR),HL
+02DA    C3 3E 01        	JP	WSTART
+02DD                    DPM1:
+02DD    22 20 EF        	LD	(DSADDR),HL
+02E0    CD D3 0B        	CALL	CONIN
+02E3    C3 3E 01        	JP	WSTART
+02E6
+02E6                    DPL:
+02E6                    	;; DUMP line
+02E6    CD F3 07        	CALL	HEXOUT4
+02E9    E5              	PUSH	HL
+02EA    21 94 09        	LD	HL,DSEP0
+02ED    CD EA 07        	CALL	STROUT
+02F0    E1              	POP	HL
+02F1    DD 21 00 EF     	LD	IX,INBUF
+02F5    06 10           	LD	B,16
+02F7                    DPL0:
+02F7    CD 20 03        	CALL	DPB
+02FA    10 FB           	DJNZ	DPL0
+02FC
+02FC    21 97 09        	LD	HL,DSEP1
+02FF    CD EA 07        	CALL	STROUT
+0302
+0302    21 00 EF        	LD	HL,INBUF
+0305    06 10           	LD	B,16
+0307                    DPL1:
+0307    7E              	LD	A,(HL)
+0308    23              	INC	HL
+0309    FE 20           	CP	' '
+030B    38 09           	JR	C,DPL2
+030D    FE 7F           	CP	7FH
+030F    30 05           	JR	NC,DPL2
+0311    CD E4 0B        	CALL	CONOUT
+0314    18 05           	JR	DPL3
+0316                    DPL2:
+0316    3E 2E           	LD	A,'.'
+0318    CD E4 0B        	CALL	CONOUT
+031B                    DPL3:
+031B    10 EA           	DJNZ	DPL1
+031D    C3 36 08        	JP	CRLF
+0320
+0320                    DPB:	; Dump byte
+0320    3E 20           	LD	A,' '
+0322    CD E4 0B        	CALL	CONOUT
+0325    3A 24 EF        	LD	A,(DSTATE)
+0328    B7              	OR	A
+0329    20 20           	JR	NZ,DPB2
+032B                    	; Dump state 0
+032B    3A 20 EF        	LD	A,(DSADDR)	; Low byte
+032E    BD              	CP	L
+032F    20 06           	JR	NZ,DPB0
+0331    3A 21 EF        	LD	A,(DSADDR+1)	; High byte
+0334    BC              	CP	H
+0335    28 0F           	JR	Z,DPB1
+0337                    DPB0:	; Still 0 or 2
+0337    3E 20           	LD	A,' '
+0339    CD E4 0B        	CALL	CONOUT
+033C    CD E4 0B        	CALL	CONOUT
+033F    DD 77 00        	LD	(IX),A
+0342    23              	INC	HL
+0343    DD 23           	INC	IX
+0345    C9              	RET
+0346                    DPB1:	; Found start address
+0346    3E 01           	LD	A,1
+0348    32 24 EF        	LD	(DSTATE),A
+034B                    DPB2:
+034B    3A 24 EF        	LD	A,(DSTATE)
+034E    FE 01           	CP	1
+0350    20 E5           	JR	NZ,DPB0
+0352                    	; Dump state 1
+0352    7E              	LD	A,(HL)
+0353    DD 77 00        	LD	(IX),A
+0356    CD F8 07        	CALL	HEXOUT2
+0359    23              	INC	HL
+035A    DD 23           	INC	IX
+035C    3A 22 EF        	LD	A,(DEADDR)	; Low byte
+035F    BD              	CP	L
+0360    C0              	RET	NZ
+0361    3A 23 EF        	LD	A,(DEADDR+1)	; High byte
+0364    BC              	CP	H
+0365    C0              	RET	NZ
+0366                    	; Found end address
+0366    3E 02           	LD	A,2
+0368    32 24 EF        	LD	(DSTATE),A
+036B    C9              	RET
+036C
+036C                    ;;;
+036C                    ;;; GO address
+036C                    ;;;
+036C
+036C                    GO:
+036C    23              	INC	HL
+036D    CD 8C 08        	CALL	SKIPSP
+0370    CD 9C 08        	CALL	RDHEX
+0373    7E              	LD	A,(HL)
+0374    B7              	OR	A
+0375    C2 85 01        	JP	NZ,ERR
+0378    79              	LD	A,C
+0379    B7              	OR	A
+037A    28 04           	JR	Z,G0
+037C
+037C    ED 53 44 EF     	LD	(REGPC),DE
+0380                    G0:
+0380                    	;; R register adjustment
+0380    2A 42 EF        	LD	HL,(REGSP)
+0383    F9              	LD	SP,HL
+0384    2A 44 EF        	LD	HL,(REGPC)
+0387    E5              	PUSH	HL
+0388    DD 2A 3E EF     	LD	IX,(REGIX)
+038C    FD 2A 40 EF     	LD	IY,(REGIY)
+0390    2A 36 EF        	LD	HL,(REGAFX)
+0393    E5              	PUSH	HL
+0394    ED 4B 38 EF     	LD	BC,(REGBCX)
+0398    ED 5B 3A EF     	LD	DE,(REGDEX)
+039C    2A 3C EF        	LD	HL,(REGHLX)
+039F    D9              	EXX
+03A0    F1              	POP	AF
+03A1    08              	EX	AF,AF'
+03A2    2A 2E EF        	LD	HL,(REGAF)
+03A5    E5              	PUSH	HL
+03A6    ED 4B 30 EF     	LD	BC,(REGBC)
+03AA    ED 5B 32 EF     	LD	DE,(REGDE)
+03AE    2A 34 EF        	LD	HL,(REGHL)
+03B1    3A 46 EF        	LD	A,(REGI)
+03B4    ED 47           	LD	I,A
+03B6    3A 47 EF        	LD	A,(REGR)
+03B9    ED 4F           	LD	R,A
+03BB    F1              	POP	AF
+03BC    C9              	RET			; POP PC
+03BD
+03BD                    ;;;
+03BD                    ;;; SET memory
+03BD                    ;;;
+03BD
+03BD                    SETM:
+03BD    23              	INC	HL
+03BE    CD 8C 08        	CALL	SKIPSP
+03C1    CD 9C 08        	CALL	RDHEX
+03C4    CD 8C 08        	CALL	SKIPSP
+03C7    7E              	LD	A,(HL)
+03C8    B7              	OR	A
+03C9    C2 85 01        	JP	NZ,ERR
+03CC    79              	LD	A,C
+03CD    B7              	OR	A
+03CE    20 04           	JR	NZ,SM0
+03D0    ED 5B 27 EF     	LD	DE,(SADDR)
+03D4                    SM0:
+03D4    EB              	EX	DE,HL
+03D5                    SM1:
+03D5    CD F3 07        	CALL	HEXOUT4
+03D8    E5              	PUSH	HL
+03D9    21 97 09        	LD	HL,DSEP1
+03DC    CD EA 07        	CALL	STROUT
+03DF    E1              	POP	HL
+03E0    7E              	LD	A,(HL)
+03E1    E5              	PUSH	HL
+03E2    CD F8 07        	CALL	HEXOUT2
+03E5    3E 20           	LD	A,' '
+03E7    CD E4 0B        	CALL	CONOUT
+03EA    CD 40 08        	CALL	GETLIN
+03ED    21 00 EF        	LD	HL,INBUF
+03F0    CD 8C 08        	CALL	SKIPSP
+03F3    7E              	LD	A,(HL)
+03F4    B7              	OR	A
+03F5    20 07           	JR	NZ,SM2
+03F7                    	;; Empty  (Increment address)
+03F7    E1              	POP	HL
+03F8    23              	INC	HL
+03F9    22 27 EF        	LD	(SADDR),HL
+03FC    18 D7           	JR	SM1
+03FE                    SM2:
+03FE    FE 2D           	CP	'-'
+0400    20 07           	JR	NZ,SM3
+0402                    	;; '-'  (Decrement address)
+0402    E1              	POP	HL
+0403    2B              	DEC	HL
+0404    22 27 EF        	LD	(SADDR),HL
+0407    18 CC           	JR	SM1
+0409                    SM3:
+0409    FE 2E           	CP	'.'
+040B    20 07           	JR	NZ,SM4
+040D    E1              	POP	HL
+040E    22 27 EF        	LD	(SADDR),HL
+0411    C3 3E 01        	JP	WSTART
+0414                    SM4:
+0414    CD 9C 08        	CALL	RDHEX
+0417    79              	LD	A,C
+0418    B7              	OR	A
+0419    E1              	POP	HL
+041A    CA 85 01        	JP	Z,ERR
+041D    73              	LD	(HL),E
+041E    23              	INC	HL
+041F    22 27 EF        	LD	(SADDR),HL
+0422    18 B1           	JR	SM1
+0424
+0424                    ;;;
+0424                    ;;; LOAD HEX file
+0424                    ;;;
+0424
+0424                    LOADH:
+0424    23              	INC	HL
+0425    CD 8C 08        	CALL	SKIPSP
+0428    CD 9C 08        	CALL	RDHEX
+042B    CD 8C 08        	CALL	SKIPSP
+042E    7E              	LD	A,(HL)
+042F    B7              	OR	A
+0430    C2 85 01        	JP	NZ,ERR
+0433
+0433    79              	LD	A,C
+0434    B7              	OR	A
+0435    20 03           	JR	NZ,LH0
+0437
+0437    11 00 00        	LD	DE,0		;Offset
+043A                    LH0:
+043A    CD D3 0B        	CALL	CONIN
+043D    CD 93 08        	CALL	UPPER
+0440    FE 53           	CP	'S'
+0442    28 5C           	JR	Z,LHS0
+0444                    LH1:
+0444    FE 3A           	CP	':'
+0446    28 0D           	JR	Z,LHI0
+0448                    LH2:
+0448                    	;; Skip to EOL
+0448    FE 0D           	CP	CR
+044A    28 EE           	JR	Z,LH0
+044C    FE 0A           	CP	LF
+044E    28 EA           	JR	Z,LH0
+0450                    LH3:
+0450    CD D3 0B        	CALL	CONIN
+0453    18 F3           	JR	LH2
+0455
+0455                    LHI0:
+0455    CD 0F 08        	CALL	HEXIN
+0458    4F              	LD	C,A		; Checksum
+0459    47              	LD	B,A		; Length
+045A
+045A    CD 0F 08        	CALL	HEXIN
+045D    67              	LD	H,A		; Address H
+045E    81              	ADD	A,C
+045F    4F              	LD	C,A
+0460
+0460    CD 0F 08        	CALL	HEXIN
+0463    6F              	LD	L,A		; Address L
+0464    81              	ADD	A,C
+0465    4F              	LD	C,A
+0466
+0466                    	;; Add offset
+0466    19              	ADD	HL,DE
+0467
+0467    CD 0F 08        	CALL	HEXIN
+046A    32 2A EF        	LD	(RECTYP),A
+046D    81              	ADD	A,C
+046E    4F              	LD	C,A		; Checksum
+046F
+046F    78              	LD	A,B
+0470    B7              	OR	A
+0471    28 14           	JR	Z,LHI3
+0473                    LHI1:
+0473    CD 0F 08        	CALL	HEXIN
+0476    F5              	PUSH	AF
+0477    81              	ADD	A,C
+0478    4F              	LD	C,A		; Checksum
+0479
+0479    3A 2A EF        	LD	A,(RECTYP)
+047C    B7              	OR	A
+047D    20 05           	JR	NZ,LHI20
+047F
+047F    F1              	POP	AF
+0480    77              	LD	(HL),A
+0481    23              	INC	HL
+0482    18 01           	JR	LHI2
+0484                    LHI20:
+0484    F1              	POP	AF
+0485                    LHI2:
+0485    10 EC           	DJNZ	LHI1
+0487                    LHI3:
+0487    CD 0F 08        	CALL	HEXIN
+048A    81              	ADD	A,C
+048B    20 0A           	JR	NZ,LHIE		; Checksum error
+048D    3A 2A EF        	LD	A,(RECTYP)
+0490    B7              	OR	A
+0491    CA 50 04        	JP	Z,LH3
+0494    C3 3E 01        	JP	WSTART
+0497                    LHIE:
+0497    21 72 09        	LD	HL,IHEMSG
+049A    CD EA 07        	CALL	STROUT
+049D    C3 3E 01        	JP	WSTART
+04A0
+04A0                    LHS0:
+04A0    CD D3 0B        	CALL	CONIN
+04A3    32 2A EF        	LD	(RECTYP),A
+04A6
+04A6    CD 0F 08        	CALL	HEXIN
+04A9    47              	LD	B,A		; Length+3
+04AA    4F              	LD	C,A		; Checksum
+04AB
+04AB    CD 0F 08        	CALL	HEXIN
+04AE    67              	LD	H,A
+04AF    81              	ADD	A,C
+04B0    4F              	LD	C,A
+04B1
+04B1    CD 0F 08        	CALL	HEXIN
+04B4    6F              	LD	L,A
+04B5    81              	ADD	A,C
+04B6    4F              	LD	C,A
+04B7
+04B7    19              	ADD	HL,DE
+04B8
+04B8    05              	DEC	B
+04B9    05              	DEC	B
+04BA    05              	DEC	B
+04BB    28 15           	JR	Z,LHS3
+04BD                    LHS1:
+04BD    CD 0F 08        	CALL	HEXIN
+04C0    F5              	PUSH	AF
+04C1    81              	ADD	A,C
+04C2    4F              	LD	C,A		; Checksum
+04C3
+04C3    3A 2A EF        	LD	A,(RECTYP)
+04C6    FE 31           	CP	'1'
+04C8    20 05           	JR	NZ,LHS2
+04CA
+04CA    F1              	POP	AF
+04CB    77              	LD	(HL),A
+04CC    23              	INC	HL
+04CD    18 01           	JR	LHS20
+04CF                    LHS2:
+04CF    F1              	POP	AF
+04D0                    LHS20:
+04D0    10 EB           	DJNZ	LHS1
+04D2                    LHS3:
+04D2    CD 0F 08        	CALL	HEXIN
+04D5    81              	ADD	A,C
+04D6    FE FF           	CP	0FFH
+04D8    20 12           	JR	NZ,LHSE
+04DA
+04DA    3A 2A EF        	LD	A,(RECTYP)
+04DD    FE 37           	CP	'7'
+04DF    28 11           	JR	Z,LHSR
+04E1    FE 38           	CP	'8'
+04E3    28 0D           	JR	Z,LHSR
+04E5    FE 39           	CP	'9'
+04E7    28 09           	JR	Z,LHSR
+04E9    C3 50 04        	JP	LH3
+04EC                    LHSE:
+04EC    21 7F 09        	LD	HL,SHEMSG
+04EF    CD EA 07        	CALL	STROUT
+04F2                    LHSR:
+04F2    C3 3E 01        	JP	WSTART
+04F5
+04F5                    ;;;
+04F5                    ;;; SAVE HEX file
+04F5                    ;;;
+04F5
+04F5                    SAVEH:
+04F5    23              	INC	HL
+04F6    7E              	LD	A,(HL)
+04F7    CD 93 08        	CALL	UPPER
+04FA    FE 49           	CP	'I'
+04FC    28 04           	JR	Z,SH0
+04FE    FE 53           	CP	'S'
+0500    20 04           	JR	NZ,SH1
+0502                    SH0:
+0502    23              	INC	HL
+0503    32 29 EF        	LD	(HEXMOD),A
+0506                    SH1:
+0506    CD 8C 08        	CALL	SKIPSP
+0509    CD 9C 08        	CALL	RDHEX
+050C    79              	LD	A,C
+050D    B7              	OR	A
+050E    28 1D           	JR	Z,SHE
+0510    D5              	PUSH	DE
+0511    DD E1           	POP	IX		; IX = Start address
+0513    CD 8C 08        	CALL	SKIPSP
+0516    7E              	LD	A,(HL)
+0517    FE 2C           	CP	','
+0519    20 12           	JR	NZ,SHE
+051B    23              	INC	HL
+051C    CD 8C 08        	CALL	SKIPSP
+051F    CD 9C 08        	CALL	RDHEX		; DE = End address
+0522    79              	LD	A,C
+0523    B7              	OR	A
+0524    28 07           	JR	Z,SHE
+0526    CD 8C 08        	CALL	SKIPSP
+0529    7E              	LD	A,(HL)
+052A    B7              	OR	A
+052B    28 03           	JR	Z,SH2
+052D                    SHE:
+052D    C3 85 01        	JP	ERR
+0530
+0530                    SH2:
+0530    DD E5           	PUSH	IX
+0532    E1              	POP	HL
+0533    EB              	EX	DE,HL
+0534    23              	INC	HL
+0535    B7              	OR	A
+0536    ED 52           	SBC	HL,DE		; HL = Length
+0538                    SH3:
+0538    CD 58 05        	CALL	SHL00
+053B    7C              	LD	A,H
+053C    B5              	OR	L
+053D    20 F9           	JR	NZ,SH3
+053F
+053F    3A 29 EF        	LD	A,(HEXMOD)
+0542    FE 49           	CP	'I'
+0544    20 09           	JR	NZ,SH4
+0546                    	;; End record for Intel HEX
+0546    21 9B 09        	LD	HL,IHEXER
+0549    CD EA 07        	CALL	STROUT
+054C    C3 3E 01        	JP	WSTART
+054F                    SH4:
+054F                    	;; End record for Motorola S record
+054F    21 A9 09        	LD	HL,SRECER
+0552    CD EA 07        	CALL	STROUT
+0555    C3 3E 01        	JP	WSTART
+0558
+0558                    SHL00:
+0558    0E 10           	LD	C,16
+055A    7C              	LD	A,H
+055B    B7              	OR	A
+055C    20 05           	JR	NZ,SHL0
+055E    7D              	LD	A,L
+055F    B9              	CP	C
+0560    30 01           	JR	NC,SHL0
+0562    4F              	LD	C,A
+0563                    SHL0:
+0563    06 00           	LD	B,0
+0565    B7              	OR	A
+0566    ED 42           	SBC	HL,BC
+0568    41              	LD	B,C
+0569
+0569    3A 29 EF        	LD	A,(HEXMOD)
+056C    FE 49           	CP	'I'
+056E    20 30           	JR	NZ,SHLS
+0570
+0570                    	;; Intel HEX
+0570    3E 3A           	LD	A,':'
+0572    CD E4 0B        	CALL	CONOUT
+0575
+0575    78              	LD	A,B
+0576    CD F8 07        	CALL	HEXOUT2		; Length
+0579    48              	LD	C,B		; Checksum
+057A
+057A    7A              	LD	A,D
+057B    CD F8 07        	CALL	HEXOUT2
+057E    7A              	LD	A,D
+057F    81              	ADD	A,C
+0580    4F              	LD	C,A
+0581
+0581    7B              	LD	A,E
+0582    CD F8 07        	CALL	HEXOUT2
+0585    7B              	LD	A,E
+0586    81              	ADD	A,C
+0587    4F              	LD	C,A
+0588
+0588    AF              	XOR	A
+0589    CD F8 07        	CALL	HEXOUT2
+058C                    SHLI0:
+058C    1A              	LD	A,(DE)
+058D    F5              	PUSH	AF
+058E    CD F8 07        	CALL	HEXOUT2
+0591    F1              	POP	AF
+0592    81              	ADD	A,C
+0593    4F              	LD	C,A
+0594
+0594    13              	INC	DE
+0595    10 F5           	DJNZ	SHLI0
+0597
+0597    79              	LD	A,C
+0598    ED 44           	NEG
+059A    CD F8 07        	CALL	HEXOUT2
+059D    C3 36 08        	JP	CRLF
+05A0
+05A0                    SHLS:
+05A0                    	;; Motorola S record
+05A0    3E 53           	LD	A,'S'
+05A2    CD E4 0B        	CALL	CONOUT
+05A5    3E 31           	LD	A,'1'
+05A7    CD E4 0B        	CALL	CONOUT
+05AA
+05AA    78              	LD	A,B
+05AB    C6 03           	ADD	A,2+1		; DataLength + 2(Addr) + 1(Sum)
+05AD    4F              	LD	C,A
+05AE    CD F8 07        	CALL	HEXOUT2
+05B1
+05B1    7A              	LD	A,D
+05B2    CD F8 07        	CALL	HEXOUT2
+05B5    7A              	LD	A,D
+05B6    81              	ADD	A,C
+05B7    4F              	LD	C,A
+05B8
+05B8    7B              	LD	A,E
+05B9    CD F8 07        	CALL	HEXOUT2
+05BC    7B              	LD	A,E
+05BD    81              	ADD	A,C
+05BE    4F              	LD	C,A
+05BF                    SHLS0:
+05BF    1A              	LD	A,(DE)
+05C0    F5              	PUSH	AF
+05C1    CD F8 07        	CALL	HEXOUT2		; Data
+05C4    F1              	POP	AF
+05C5    81              	ADD	A,C
+05C6    4F              	LD	C,A
+05C7
+05C7    13              	INC	DE
+05C8    10 F5           	DJNZ	SHLS0
+05CA
+05CA    79              	LD	A,C
+05CB    2F              	CPL
+05CC    CD F8 07        	CALL	HEXOUT2
+05CF    C3 36 08        	JP	CRLF
+05D2
+05D2                    ;;;
+05D2                    ;;; Port in
+05D2                    ;;;
+05D2
+05D2                    PIN:
+05D2    23              	INC	HL
+05D3    AF              	XOR	A
+05D4    32 2C EF        	LD	(SIZE),A
+05D7    3A 2B EF        	LD	A,(PSPEC)
+05DA    FE 08           	CP	08H		; Z280
+05DC    20 10           	JR	NZ,PI1
+05DE    7E              	LD	A,(HL)
+05DF    CD 93 08        	CALL	UPPER
+05E2    FE 57           	CP	'W'
+05E4    28 04           	JR	Z,PI0
+05E6    FE 53           	CP	'S'
+05E8    20 04           	JR	NZ,PI1
+05EA                    PI0:
+05EA    23              	INC	HL
+05EB    32 2C EF        	LD	(SIZE),A
+05EE                    PI1:
+05EE    CD 8C 08        	CALL	SKIPSP
+05F1    CD 9C 08        	CALL	RDHEX
+05F4    79              	LD	A,C
+05F5    B7              	OR	A
+05F6    CA 85 01        	JP	Z,ERR		; Port no. missing
+05F9    CD 8C 08        	CALL	SKIPSP
+05FC    7E              	LD	A,(HL)
+05FD    B7              	OR	A
+05FE    C2 85 01        	JP	NZ,ERR
+0601
+0601    42              	LD	B,D
+0602    4B              	LD	C,E
+0603
+0603    3A 2C EF        	LD	A,(SIZE)
+0606    FE 57           	CP	'W'
+0608    28 32           	JR	Z,PIW
+060A    FE 53           	CP	'S'
+060C    28 4B           	JR	Z,PIS
+060E    3A 2B EF        	LD	A,(PSPEC)
+0611    FE 08           	CP	08H		; Z280
+0613    28 0B           	JR	Z,PIB
+0615                    	;; Byte
+0615    ED 78           	IN	A,(C)
+0617    CD F8 07        	CALL	HEXOUT2
+061A    CD 36 08        	CALL	CRLF
+061D    C3 3E 01        	JP	WSTART
+0620                    	;; Byte (Z280 only)
+0620                    PIB:
+0620    0E 08           	LD	C,08		; I/O Bank register
+0622    ED 66           	DB	0EDH,66H	; LDCTL HL,(C)
+0624    E5              	PUSH	HL
+0625    3A 2D EF        	LD	A,(IOPAGE)
+0628    6F              	LD	L,A
+0629    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+062B    4B              	LD	C,E
+062C    ED 78           	IN	A,(C)
+062E    0E 08           	LD	C,08H		; I/O Bank register
+0630    E1              	POP	HL
+0631    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+0633    CD F8 07        	CALL	HEXOUT2
+0636    CD 36 08        	CALL	CRLF
+0639    C3 3E 01        	JP	WSTART
+063C                    	;; Word (Z280 only)
+063C                    PIW:
+063C    0E 08           	LD	C,08		; I/O Bank register
+063E    ED 66           	DB	0EDH,66H	; LDCTL HL,(C)
+0640    E5              	PUSH	HL
+0641    3A 2D EF        	LD	A,(IOPAGE)
+0644    6F              	LD	L,A
+0645    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+0647    4B              	LD	C,E
+0648    ED B7           	DB	0EDH,0B7H	; IN HL,(C)
+064A    E3              	EX	(SP),HL
+064B    0E 08           	LD	C,08H
+064D    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+064F    E1              	POP	HL
+0650    CD F3 07        	CALL	HEXOUT4
+0653    CD 36 08        	CALL	CRLF
+0656    C3 3E 01        	JP	WSTART
+0659                    	;; Status (Z280 only)
+0659                    PIS:
+0659    ED 66           	DB	0EDH,66H	; LDCTL HL,(C)
+065B    CD F3 07        	CALL	HEXOUT4
+065E    CD 36 08        	CALL	CRLF
+0661    C3 3E 01        	JP	WSTART
+0664
+0664                    ;;;
+0664                    ;;; Port out
+0664                    ;;;
+0664
+0664                    POUT:
+0664    23              	INC	HL
+0665    AF              	XOR	A
+0666    32 2C EF        	LD	(SIZE),A
+0669    3A 2B EF        	LD	A,(PSPEC)
+066C    FE 08           	CP	08H		; Z280
+066E    20 10           	JR	NZ,PO1
+0670    7E              	LD	A,(HL)
+0671    CD 93 08        	CALL	UPPER
+0674    FE 57           	CP	'W'
+0676    28 04           	JR	Z,PO0
+0678    FE 53           	CP	'S'
+067A    20 04           	JR	NZ,PO1
+067C                    PO0:
+067C    23              	INC	HL
+067D    32 2C EF        	LD	(SIZE),A
+0680                    PO1:
+0680    CD 8C 08        	CALL	SKIPSP
+0683    CD 9C 08        	CALL	RDHEX
+0686    79              	LD	A,C
+0687    B7              	OR	A
+0688    CA 85 01        	JP	Z,ERR		; Port no. missing
+068B    D5              	PUSH	DE
+068C    DD E1           	POP	IX
+068E    CD 8C 08        	CALL	SKIPSP
+0691    7E              	LD	A,(HL)
+0692    FE 2C           	CP	','
+0694    C2 85 01        	JP	NZ,ERR
+0697    23              	INC	HL
+0698    CD 8C 08        	CALL	SKIPSP
+069B    CD 9C 08        	CALL	RDHEX
+069E    79              	LD	A,C
+069F    B7              	OR	A
+06A0    CA 85 01        	JP	Z,ERR		; Data missing
+06A3    CD 8C 08        	CALL	SKIPSP
+06A6    7E              	LD	A,(HL)
+06A7    B7              	OR	A
+06A8    C2 85 01        	JP	NZ,ERR
+06AB
+06AB    DD E5           	PUSH	IX
+06AD    C1              	POP	BC
+06AE
+06AE    3A 2C EF        	LD	A,(SIZE)
+06B1    FE 57           	CP	'W'
+06B3    28 27           	JR	Z,POW
+06B5    FE 53           	CP	'S'
+06B7    28 3D           	JR	Z,POS
+06B9    3A 2B EF        	LD	A,(PSPEC)
+06BC    FE 08           	CP	08H		; Z280
+06BE    28 05           	JR	Z,POB
+06C0                    	;; Byte
+06C0    ED 59           	OUT	(C),E
+06C2    C3 3E 01        	JP	WSTART
+06C5                    	;; Byte (Z280 only)
+06C5                    POB:
+06C5    C5              	PUSH	BC
+06C6    0E 08           	LD	C,08		; I/O Bank register
+06C8    ED 66           	DB	0EDH,66H	; LDCTL HL,(C)
+06CA    55              	LD	D,L
+06CB    3A 2D EF        	LD	A,(IOPAGE)
+06CE    6F              	LD	L,A
+06CF    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+06D1    C1              	POP	BC
+06D2    ED 59           	OUT	(C),E
+06D4    0E 08           	LD	C,08H		; I/O Bank register
+06D6    6A              	LD	L,D
+06D7    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+06D9    C3 3E 01        	JP	WSTART
+06DC                    	;; Word (Z280 only)
+06DC                    POW:
+06DC    DD 69           	DB	0DDH,69H	; LD IXL,C
+06DE    0E 08           	LD	C,08		; I/O Bank register
+06E0    ED 66           	DB	0EDH,66H	; LDCTL HL,(C)
+06E2    E5              	PUSH	HL
+06E3    3A 2D EF        	LD	A,(IOPAGE)
+06E6    6F              	LD	L,A
+06E7    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+06E9    DD 4D           	DB	0DDH,4DH	; LD C,IXL
+06EB    EB              	EX	DE,HL
+06EC    ED BF           	DB	0EDH,0BFH	; OUT (C),HL
+06EE    0E 08           	LD	C,08H		; I/O Bank register
+06F0    E1              	POP	HL
+06F1    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+06F3    C3 3E 01        	JP	WSTART
+06F6                    	;; Control (Z280 only)
+06F6                    POS:
+06F6    EB              	EX	DE,HL
+06F7    ED 6E           	DB	0EDH,6EH	; LDCTL (C),HL
+06F9    C3 3E 01        	JP	WSTART
+06FC
+06FC                    ;;;
+06FC                    ;;; I/O Bank
+06FC                    ;;;
+06FC
+06FC                    PBANK:
+06FC    3A 2B EF        	LD	A,(PSPEC)
+06FF    FE 08           	CP	08H		; Z280
+0701    C2 85 01        	JP	NZ,ERR
+0704    23              	INC	HL
+0705    CD 8C 08        	CALL	SKIPSP
+0708    CD 9C 08        	CALL	RDHEX
+070B    CD 8C 08        	CALL	SKIPSP
+070E    7E              	LD	A,(HL)
+070F    B7              	OR	A
+0710    C2 85 01        	JP	NZ,ERR
+0713    79              	LD	A,C
+0714    B7              	OR	A
+0715    28 07           	JR	Z,PB0
+0717    7B              	LD	A,E
+0718    32 2D EF        	LD	(IOPAGE),A
+071B    C3 3E 01        	JP	WSTART
+071E                    PB0:
+071E    3A 2D EF        	LD	A,(IOPAGE)
+0721    CD F8 07        	CALL	HEXOUT2
+0724    CD 36 08        	CALL	CRLF
+0727    C3 3E 01        	JP	WSTART
+072A
+072A                    ;;;
+072A                    ;;; Register
+072A                    ;;;
+072A
+072A                    REG:
+072A    23              	INC	HL
+072B    CD 8C 08        	CALL	SKIPSP
+072E    CD 93 08        	CALL	UPPER
+0731    B7              	OR	A
+0732    20 06           	JR	NZ,RG0
+0734    CD BA 07        	CALL	RDUMP
+0737    C3 3E 01        	JP	WSTART
+073A                    RG0:
+073A    EB              	EX	DE,HL
+073B    21 6B 0A        	LD	HL,RNTAB
+073E                    RG1:
+073E    BE              	CP	(HL)
+073F    28 0D           	JR	Z,RG2		; Character match
+0741    4F              	LD	C,A
+0742    23              	INC	HL
+0743    7E              	LD	A,(HL)
+0744    B7              	OR	A
+0745    28 70           	JR	Z,RGE		; Found end mark
+0747    79              	LD	A,C
+0748    01 05 00        	LD	BC,5
+074B    09              	ADD	HL,BC		; Next entry
+074C    18 F0           	JR	RG1
+074E                    RG2:
+074E    23              	INC	HL
+074F    7E              	LD	A,(HL)
+0750    FE 0F           	CP	0FH		; Link code
+0752    20 0C           	JR	NZ,RG3
+0754                    	;; Next table
+0754    23              	INC	HL
+0755    4E              	LD	C,(HL)
+0756    23              	INC	HL
+0757    66              	LD	H,(HL)
+0758    69              	LD	L,C
+0759    13              	INC	DE
+075A    1A              	LD	A,(DE)
+075B    CD 93 08        	CALL	UPPER
+075E    18 DE           	JR	RG1
+0760                    RG3:
+0760    B7              	OR	A
+0761    28 54           	JR	Z,RGE		; Found end mark
+0763
+0763    4E              	LD	C,(HL)		; LD C,A???
+0764    23              	INC	HL
+0765    5E              	LD	E,(HL)
+0766    23              	INC	HL
+0767    56              	LD	D,(HL)
+0768    D5              	PUSH	DE		; Reg storage address
+0769    23              	INC	HL
+076A    7E              	LD	A,(HL)
+076B    23              	INC	HL
+076C    66              	LD	H,(HL)
+076D    6F              	LD	L,A		; HL: Reg name
+076E    CD EA 07        	CALL	STROUT
+0771    3E 3D           	LD	A,'='
+0773    CD E4 0B        	CALL	CONOUT
+0776
+0776    79              	LD	A,C
+0777    E6 07           	AND	07H
+0779    FE 01           	CP	1
+077B    20 08           	JR	NZ,RG4
+077D                    	;; 8 bit register
+077D    E1              	POP	HL
+077E    7E              	LD	A,(HL)
+077F    E5              	PUSH	HL
+0780    CD F8 07        	CALL	HEXOUT2
+0783    18 0C           	JR	RG5
+0785                    RG4:
+0785                    	;; 16 bit register
+0785    E1              	POP	HL
+0786    E5              	PUSH	HL
+0787    23              	INC	HL
+0788    7E              	LD	A,(HL)
+0789    CD F8 07        	CALL	HEXOUT2
+078C    2B              	DEC	HL
+078D    7E              	LD	A,(HL)
+078E    CD F8 07        	CALL	HEXOUT2
+0791                    RG5:
+0791    3E 20           	LD	A,' '
+0793    CD E4 0B        	CALL	CONOUT
+0796    C5              	PUSH	BC		; C: reg size
+0797    CD 40 08        	CALL	GETLIN
+079A    21 00 EF        	LD	HL,INBUF
+079D    CD 8C 08        	CALL	SKIPSP
+07A0    CD 9C 08        	CALL	RDHEX
+07A3    79              	LD	A,C
+07A4    B7              	OR	A
+07A5    28 0D           	JR	Z,RGR
+07A7    C1              	POP	BC
+07A8    E1              	POP	HL
+07A9    79              	LD	A,C
+07AA    FE 01           	CP	1
+07AC    20 03           	JR	NZ,RG6
+07AE                    	;; 8 bit register
+07AE    73              	LD	(HL),E
+07AF    18 03           	JR	RG7
+07B1                    RG6:
+07B1                    	;; 16 bit register
+07B1    73              	LD	(HL),E
+07B2    23              	INC	HL
+07B3    72              	LD	(HL),D
+07B4                    RG7:
+07B4                    RGR:
+07B4    C3 3E 01        	JP	WSTART
+07B7                    RGE:
+07B7    C3 85 01        	JP	ERR
+07BA
+07BA                    RDUMP:
+07BA    21 C0 09        	LD	HL,RDTAB
+07BD                    RD0:
+07BD    5E              	LD	E,(HL)
+07BE    23              	INC	HL
+07BF    56              	LD	D,(HL)
+07C0    23              	INC	HL
+07C1    7A              	LD	A,D
+07C2    B3              	OR	E
+07C3    CA 36 08        	JP	Z,CRLF		; End
+07C6    EB              	EX	DE,HL
+07C7    CD EA 07        	CALL	STROUT
+07CA    EB              	EX	DE,HL
+07CB
+07CB    5E              	LD	E,(HL)
+07CC    23              	INC	HL
+07CD    56              	LD	D,(HL)
+07CE    23              	INC	HL
+07CF    7E              	LD	A,(HL)
+07D0    23              	INC	HL
+07D1    EB              	EX	DE,HL
+07D2    FE 01           	CP	1
+07D4    20 07           	JR	NZ,RD1
+07D6                    	;; 1 byte
+07D6    7E              	LD	A,(HL)
+07D7    CD F8 07        	CALL	HEXOUT2
+07DA    EB              	EX	DE,HL
+07DB    18 E0           	JR	RD0
+07DD                    RD1:
+07DD                    	;; 2 byte
+07DD    23              	INC	HL
+07DE    7E              	LD	A,(HL)
+07DF    CD F8 07        	CALL	HEXOUT2		; High byte
+07E2    2B              	DEC	HL
+07E3    7E              	LD	A,(HL)
+07E4    CD F8 07        	CALL	HEXOUT2		; Low byte
+07E7    EB              	EX	DE,HL
+07E8    18 D3           	JR	RD0
+07EA
+07EA                    ;;;
+07EA                    ;;; Other support routines
+07EA                    ;;;
+07EA
+07EA                    STROUT:
+07EA    7E              	LD	A,(HL)
+07EB    A7              	AND	A
+07EC    C8              	RET	Z
+07ED    CD E4 0B        	CALL	CONOUT
+07F0    23              	INC	HL
+07F1    18 F7           	JR	STROUT
+07F3
+07F3                    HEXOUT4:
+07F3    7C              	LD	A,H
+07F4    CD F8 07        	CALL	HEXOUT2
+07F7    7D              	LD	A,L
+07F8                    HEXOUT2:
+07F8    F5              	PUSH	AF
+07F9    1F              	RRA
+07FA    1F              	RRA
+07FB    1F              	RRA
+07FC    1F              	RRA
+07FD    CD 01 08        	CALL	HEXOUT1
+0800    F1              	POP	AF
+0801                    HEXOUT1:
+0801    E6 0F           	AND	0FH
+0803    C6 30           	ADD	A,'0'
+0805    FE 3A           	CP	'9'+1
+0807    DA E4 0B        	JP	C,CONOUT
+080A    C6 07           	ADD	A,'A'-'9'-1
+080C    C3 E4 0B        	JP	CONOUT
+080F
+080F                    HEXIN:
+080F    AF              	XOR	A
+0810    CD 17 08        	CALL	HI0
+0813    07              	RLCA
+0814    07              	RLCA
+0815    07              	RLCA
+0816    07              	RLCA
+0817                    HI0:
+0817    C5              	PUSH	BC
+0818    4F              	LD	C,A
+0819    CD D3 0B        	CALL	CONIN
+081C    CD 93 08        	CALL	UPPER
+081F    FE 30           	CP	'0'
+0821    38 11           	JR	C,HIR
+0823    FE 3A           	CP	'9'+1
+0825    38 0A           	JR	C,HI1
+0827    FE 41           	CP	'A'
+0829    38 09           	JR	C,HIR
+082B    FE 47           	CP	'F'+1
+082D    30 05           	JR	NC,HIR
+082F    D6 07           	SUB	'A'-'9'-1
+0831                    HI1:
+0831    D6 30           	SUB	'0'
+0833    B1              	OR	C
+0834                    HIR:
+0834    C1              	POP	BC
+0835    C9              	RET
+0836
+0836                    CRLF:
+0836    3E 0D           	LD	A,CR
+0838    CD E4 0B        	CALL	CONOUT
+083B    3E 0A           	LD	A,LF
+083D    C3 E4 0B        	JP	CONOUT
+0840
+0840                    GETLIN:
+0840    21 00 EF        	LD	HL,INBUF
+0843    06 00           	LD	B,0
+0845                    GL0:
+0845    CD D3 0B        	CALL	CONIN
+0848    FE 0D           	CP	CR
+084A    28 3A           	JR	Z,GLE
+084C    FE 0A           	CP	LF
+084E    28 36           	JR	Z,GLE
+0850    FE 08           	CP	BS
+0852    28 1B           	JR	Z,GLB
+0854    FE 7F           	CP	DEL
+0856    28 17           	JR	Z,GLB
+0858    FE 20           	CP	' '
+085A    38 E9           	JR	C,GL0
+085C    FE 80           	CP	80H
+085E    30 E5           	JR	NC,GL0
+0860    4F              	LD	C,A
+0861    78              	LD	A,B
+0862    FE 1F           	CP	BUFLEN-1
+0864    30 DF           	JR	NC,GL0	; Too long
+0866    04              	INC	B
+0867    79              	LD	A,C
+0868    CD E4 0B        	CALL	CONOUT
+086B    77              	LD	(HL),A
+086C    23              	INC	HL
+086D    18 D6           	JR	GL0
+086F                    GLB:
+086F    78              	LD	A,B
+0870    A7              	AND	A
+0871    28 D2           	JR	Z,GL0
+0873    05              	DEC	B
+0874    2B              	DEC	HL
+0875    3E 08           	LD	A,08H
+0877    CD E4 0B        	CALL	CONOUT
+087A    3E 20           	LD	A,' '
+087C    CD E4 0B        	CALL	CONOUT
+087F    3E 08           	LD	A,08H
+0881    CD E4 0B        	CALL	CONOUT
+0884    18 BF           	JR	GL0
+0886                    GLE:
+0886    CD 36 08        	CALL	CRLF
+0889    36 00           	LD	(HL),00H
+088B    C9              	RET
+088C
+088C                    SKIPSP:
+088C    7E              	LD	A,(HL)
+088D    FE 20           	CP	' '
+088F    C0              	RET	NZ
+0890    23              	INC	HL
+0891    18 F9           	JR	SKIPSP
+0893
+0893                    UPPER:
+0893    FE 61           	CP	'a'
+0895    D8              	RET	C
+0896    FE 7B           	CP	'z'+1
+0898    D0              	RET	NC
+0899    C6 E0           	ADD	A,'A'-'a'
+089B    C9              	RET
+089C
+089C                    RDHEX:
+089C    0E 00           	LD	C,0
+089E    11 00 00        	LD	DE,0
+08A1                    RH0:
+08A1    7E              	LD	A,(HL)
+08A2    CD 93 08        	CALL	UPPER
+08A5    FE 30           	CP	'0'
+08A7    38 2C           	JR	C,RHE
+08A9    FE 3A           	CP	'9'+1
+08AB    38 0A           	JR	C,RH1
+08AD    FE 41           	CP	'A'
+08AF    38 24           	JR	C,RHE
+08B1    FE 47           	CP	'F'+1
+08B3    30 20           	JR	NC,RHE
+08B5    D6 07           	SUB	'A'-'9'-1
+08B7                    RH1:
+08B7    D6 30           	SUB	'0'
+08B9    17              	RLA
+08BA    17              	RLA
+08BB    17              	RLA
+08BC    17              	RLA
+08BD    17              	RLA
+08BE    CB 13           	RL	E
+08C0    CB 12           	RL	D
+08C2    17              	RLA
+08C3    CB 13           	RL	E
+08C5    CB 12           	RL	D
+08C7    17              	RLA
+08C8    CB 13           	RL	E
+08CA    CB 12           	RL	D
+08CC    17              	RLA
+08CD    CB 13           	RL	E
+08CF    CB 12           	RL	D
+08D1    23              	INC	HL
+08D2    0C              	INC	C
+08D3    18 CC           	JR	RH0
+08D5                    RHE:
+08D5    C9              	RET
+08D6
+08D6                    ;;;
+08D6                    ;;; RST 30H Handler
+08D6                    ;;;
+08D6
+08D6                    RST30H:
+08D6    E5              	PUSH	HL
+08D7    C5              	PUSH	BC
+08D8    21 E6 08        	LD	HL,APITBL
+08DB    06 00           	LD	B,0
+08DD    09              	ADD	HL,BC
+08DE    09              	ADD	HL,BC
+08DF    46              	LD	B,(HL)
+08E0    23              	INC	HL
+08E1    66              	LD	H,(HL)
+08E2    68              	LD	L,B
+08E3    C1              	POP	BC
+08E4    E3              	EX	(SP),HL		; Restore HL, jump address on stack top
+08E5    C9              	RET
+08E6
+08E6                    APITBL:
+08E6    F4 08           	DW	API00		; 00: CSTART
+08E8    F9 08           	DW	API01		; 01: WSTART
+08EA    E4 0B           	DW	CONOUT		; 02: CONOUT
+08EC    EA 07           	DW	STROUT		; 03: STROUT
+08EE    D3 0B           	DW	CONIN		; 04: CONIN
+08F0    DE 0B           	DW	CONST		; 05: CONST
+08F2    FD 08           	DW	API06		; 06: PSPEC
+08F4
+08F4                    	;; CSTART
+08F4                    API00:
+08F4    E1              	POP	HL		; Drop return address
+08F5    F3              	DI
+08F6    C3 00 01        	JP	CSTART
+08F9
+08F9                    	;; WSTART
+08F9                    API01:
+08F9    E1              	POP	HL		; Drop return address
+08FA    C3 3E 01        	JP	WSTART
+08FD
+08FD                    	;; PSPEC
+08FD                    API06:
+08FD    3A 2B EF        	LD	A,(PSPEC)
+0900    C9              	RET
+0901
+0901                    				; USE_NEWAPI
+0901
+0901                    ;;;
+0901                    ;;; RST 38H Handler
+0901                    ;;;
+0901
+0901                    RST38H:
+0901    F5              	PUSH	AF
+0902    ED 5F           	LD	A,R
+0904    32 47 EF        	LD	(REGR),A
+0907    ED 57           	LD	A,I
+0909    32 46 EF        	LD	(REGI),A
+090C    22 34 EF        	LD	(REGHL),HL
+090F    ED 53 32 EF     	LD	(REGDE),DE
+0913    ED 43 30 EF     	LD	(REGBC),BC
+0917    E1              	POP	HL
+0918    22 2E EF        	LD	(REGAF),HL
+091B    08              	EX	AF,AF'
+091C    F5              	PUSH	AF
+091D    D9              	EXX
+091E    22 3C EF        	LD	(REGHLX),HL
+0921    ED 53 3A EF     	LD	(REGDEX),DE
+0925    ED 43 38 EF     	LD	(REGBCX),BC
+0929    E1              	POP	HL
+092A    22 36 EF        	LD	(REGAFX),HL
+092D    DD 22 3E EF     	LD	(REGIX),IX
+0931    FD 22 40 EF     	LD	(REGIY),IY
+0935    E1              	POP	HL
+0936    2B              	DEC	HL
+0937    22 44 EF        	LD	(REGPC),HL
+093A    ED 73 42 EF     	LD	(REGSP),SP
+093E
+093E                    	;; R register adjustment
+093E    21 B6 09        	LD	HL,RST38MSG
+0941    CD EA 07        	CALL	STROUT
+0944    CD BA 07        	CALL	RDUMP
+0947    C3 3E 01        	JP	WSTART
+094A
+094A                    ;;;
+094A                    ;;; Messages
+094A                    ;;;
+094A
+094A                    OPNMSG:
+094A    0D 0A 55 6E     	DB	CR,LF,"Universal Monitor for EMUZ80_Q84",CR,LF,00H
+094E    69 76 65 72
+0952    73 61 6C 20
+0956    4D 6F 6E 69
+095A    74 6F 72 20
+095E    66 6F 72 20
+0962    45 4D 55 5A
+0966    38 30 5F 51
+096A    38 34 0D 0A
+096E    00
+096F
+096F                    PROMPT:
+096F    5D 20 00        	DB	"] ",00H
+0972
+0972                    IHEMSG:
+0972    45 72 72 6F     	DB	"Error ihex",CR,LF,00H
+0976    72 20 69 68
+097A    65 78 0D 0A
+097E    00
+097F                    SHEMSG:
+097F    45 72 72 6F     	DB	"Error srec",CR,LF,00H
+0983    72 20 73 72
+0987    65 63 0D 0A
+098B    00
+098C                    ERRMSG:
+098C    45 72 72 6F     	DB	"Error",CR,LF,00H
+0990    72 0D 0A 00
+0994
+0994                    DSEP0:
+0994    20 3A 00        	DB	" :",00H
+0997                    DSEP1:
+0997    20 3A 20 00     	DB	" : ",00H
+099B                    IHEXER:
+099B    3A 30 30 30             DB	":00000001FF",CR,LF,00H
+099F    30 30 30 30
+09A3    31 46 46 0D
+09A7    0A 00
+09A9                    SRECER:
+09A9    53 39 30 33             DB	"S9030000FC",CR,LF,00H
+09AD    30 30 30 30
+09B1    46 43 0D 0A
+09B5    00
+09B6
+09B6                    RST38MSG:
+09B6    52 53 54 20     	DB	"RST 38H",CR,LF,00H
+09BA    33 38 48 0D
+09BE    0A 00
+09C0
+09C0                    	;; Register dump table
+09C0    15 0A 2F EF     RDTAB:	DW	RDSA,   REGAF+1
+09C4    01              	DB	1
+09C5    19 0A 30 EF     	DW	RDSBC,  REGBC
+09C9    02              	DB	2
+09CA    1F 0A 32 EF     	DW	RDSDE,  REGDE
+09CE    02              	DB	2
+09CF    25 0A 34 EF     	DW	RDSHL,  REGHL
+09D3    02              	DB	2
+09D4    2B 0A 2E EF     	DW	RDSF,   REGAF
+09D8    01              	DB	1
+09D9
+09D9    30 0A 3E EF     	DW	RDSIX,  REGIX
+09DD    02              	DB	2
+09DE    36 0A 40 EF     	DW	RDSIY,  REGIY
+09E2    02              	DB	2
+09E3
+09E3    3B 0A 37 EF     	DW	RDSAX,  REGAFX+1
+09E7    01              	DB	1
+09E8    41 0A 38 EF     	DW	RDSBCX, REGBCX
+09EC    02              	DB	2
+09ED    47 0A 3A EF     	DW	RDSDEX, REGDEX
+09F1    02              	DB	2
+09F2    4D 0A 3C EF     	DW	RDSHLX, REGHLX
+09F6    02              	DB	2
+09F7    53 0A 36 EF     	DW	RDSFX,  REGAFX
+09FB    01              	DB	1
+09FC
+09FC    58 0A 42 EF     	DW	RDSSP,  REGSP
+0A00    02              	DB	2
+0A01    5E 0A 44 EF     	DW	RDSPC,  REGPC
+0A05    02              	DB	2
+0A06    63 0A 46 EF     	DW	RDSI,   REGI
+0A0A    01              	DB	1
+0A0B    67 0A 47 EF     	DW	RDSR,   REGR
+0A0F    01              	DB	1
+0A10
+0A10    00 00 00 00     	DW	0000H,  0000H
+0A14    00              	DB	0
+0A15
+0A15    41 20 3D 00     RDSA:	DB	"A =",00H
+0A19    20 42 43 20     RDSBC:	DB	" BC =",00H
+0A1D    3D 00
+0A1F    20 44 45 20     RDSDE:	DB	" DE =",00H
+0A23    3D 00
+0A25    20 48 4C 20     RDSHL:	DB	" HL =",00H
+0A29    3D 00
+0A2B    20 46 20 3D     RDSF:	DB	" F =",00H
+0A2F    00
+0A30    20 20 49 58     RDSIX:	DB	"  IX=",00H
+0A34    3D 00
+0A36    20 49 59 3D     RDSIY:	DB	" IY=",00H
+0A3A    00
+0A3B    0D 0A 41 27     RDSAX:	DB	CR,LF,"A'=",00H
+0A3F    3D 00
+0A41    20 42 43 27     RDSBCX:	DB	" BC'=",00H
+0A45    3D 00
+0A47    20 44 45 27     RDSDEX:	DB	" DE'=",00H
+0A4B    3D 00
+0A4D    20 48 4C 27     RDSHLX:	DB	" HL'=",00H
+0A51    3D 00
+0A53    20 46 27 3D     RDSFX:	DB	" F'=",00H
+0A57    00
+0A58    20 20 53 50     RDSSP:	DB	"  SP=",00H
+0A5C    3D 00
+0A5E    20 50 43 3D     RDSPC:	DB	" PC=",00H
+0A62    00
+0A63    20 49 3D 00     RDSI:	DB	" I=",00H
+0A67    20 52 3D 00     RDSR:	DB	" R=",00H
+0A6B
+0A6B                    RNTAB:
+0A6B    41 0F           	DB	'A',0FH		; "A?"
+0A6D    B5 0A 00 00     	DW	RNTABA,0
+0A71    42 0F           	DB	'B',0FH		; "B?"
+0A73    C3 0A 00 00     	DW	RNTABB,0
+0A77    43 0F           	DB	'C',0FH		; "C?"
+0A79    E5 0A 00 00     	DW	RNTABC,0
+0A7D    44 0F           	DB	'D',0FH		; "D?"
+0A7F    F3 0A 00 00     	DW	RNTABD,0
+0A83    45 0F           	DB	'E',0FH		; "E?"
+0A85    15 0B 00 00     	DW	RNTABE,0
+0A89    46 0F           	DB	'F',0FH		; "F?"
+0A8B    23 0B 00 00     	DW	RNTABF,0
+0A8F    48 0F           	DB	'H',0FH		; "H?"
+0A91    31 0B 00 00     	DW	RNTABH,0
+0A95    49 0F           	DB	'I',0FH		; "I?"
+0A97    61 0B 00 00     	DW	RNTABI,0
+0A9B    4C 0F           	DB	'L',0FH		; "L?"
+0A9D    53 0B 00 00     	DW	RNTABL,0
+0AA1    50 0F           	DB	'P',0FH		; "P?"
+0AA3    75 0B 00 00     	DW	RNTABP,0
+0AA7    52 01           	DB	'R',1		; "R"
+0AA9    47 EF D0 0B     	DW	REGR,RNR
+0AAD    53 0F           	DB	'S',0FH		; "S?"
+0AAF    7D 0B 00 00     	DW	RNTABS,0
+0AB3
+0AB3    00 00           	DB	00H,0		; End mark
+0AB5
+0AB5                    RNTABA:
+0AB5    00 01           	DB	00H,1		; "A"
+0AB7    2F EF 85 0B     	DW	REGAF+1,RNA
+0ABB    27 01           	DB	27H,1		; "A'"
+0ABD                    ;;	DB	'\'',1		; "A'"
+0ABD    37 EF 9E 0B     	DW	REGAFX+1,RNAX
+0AC1
+0AC1    00 00           	DB	00H,0
+0AC3
+0AC3                    RNTABB:
+0AC3    00 01           	DB	00H,1		; "B"
+0AC5    31 EF 8A 0B     	DW	REGBC+1,RNB
+0AC9    27 01           	DB	27H,1		; "B'"
+0ACB                    ;;	DB	'\'',1		; "B'"
+0ACB    39 EF A5 0B     	DW	REGBCX+1,RNBX
+0ACF    43 0F           	DB	'C',0FH		; "BC?"
+0AD1    D7 0A 00 00     	DW	RNTABBC,0
+0AD5
+0AD5    00 00           	DB	00H,0		; End mark
+0AD7
+0AD7                    RNTABBC:
+0AD7    00 02           	DB	00H,2		; "BC"
+0AD9    30 EF 87 0B     	DW	REGBC,RNBC
+0ADD    27 02           	DB	27H,2		; "BC'"
+0ADF                    ;;	DB	'\'',2		; "BC'"
+0ADF    38 EF A1 0B     	DW	REGBCX,RNBCX
+0AE3
+0AE3    00 00           	DB	00H,0
+0AE5
+0AE5                    RNTABC:
+0AE5    00 01           	DB	00H,1		; "C"
+0AE7    30 EF 8C 0B     	DW	REGBC,RNC
+0AEB    27 01           	DB	27H,1		; "C'"
+0AED                    ;;	DB	'\'',1		; "C'"
+0AED    38 EF A8 0B     	DW	REGBCX,RNCX
+0AF1
+0AF1    00 00           	DB	00H,0
+0AF3
+0AF3                    RNTABD:
+0AF3    00 01           	DB	00H,1		; "D"
+0AF5    33 EF 91 0B     	DW	REGDE+1,RND
+0AF9    27 01           	DB	27H,1		; "D'"
+0AFB                    ;;	DB	'\'',1		; "D'"
+0AFB    3B EF AF 0B     	DW	REGDEX+1,RNDX
+0AFF    45 0F           	DB	'E',0FH		; "DE?"
+0B01    07 0B 00 00     	DW	RNTABDE,0
+0B05
+0B05    00 00           	DB	00H,0
+0B07
+0B07                    RNTABDE:
+0B07    00 02           	DB	00H,2		; "DE"
+0B09    32 EF 8E 0B     	DW	REGDE,RNDE
+0B0D    27 02           	DB	27H,2		; "DE'"
+0B0F                    ;;	DB	'\'',2		; "DE'"
+0B0F    3A EF AB 0B     	DW	REGDEX,RNDEX
+0B13
+0B13    00 00           	DB	00H,0
+0B15
+0B15                    RNTABE:
+0B15    00 01           	DB	00H,1		; "E"
+0B17    32 EF 93 0B     	DW	REGDE,RNE
+0B1B    27 01           	DB	27H,1		; "E'"
+0B1D                    ;;	DB	'\'',1		; "E'"
+0B1D    3A EF B2 0B     	DW	REGDEX,RNEX
+0B21
+0B21    00 00           	DB	00H,0
+0B23
+0B23                    RNTABF:
+0B23    00 01           	DB	00H,1		; "F"
+0B25    2E EF 9C 0B     	DW	REGAF,RNF
+0B29    27 01           	DB	27H,1		; "F'"
+0B2B                    ;;	DB	'\'',1		; "F'"
+0B2B    36 EF BF 0B     	DW	REGAFX,RNFX
+0B2F
+0B2F    00 00           	DB	00H,0
+0B31
+0B31                    RNTABH:
+0B31    00 01           	DB	00H,1		; "H"
+0B33    35 EF 98 0B     	DW	REGHL+1,RNH
+0B37    27 01           	DB	27H,1		; "H'"
+0B39                    ;;	DB	'\'',1		; "H'"
+0B39    3D EF B9 0B     	DW	REGHLX+1,RNHX
+0B3D    4C 0F           	DB	'L',0FH		; "HL?"
+0B3F    45 0B 00 00     	DW	RNTABHL,0
+0B43
+0B43    00 00           	DB	00H,0
+0B45
+0B45                    RNTABHL:
+0B45    00 02           	DB	00H,2		; "HL"
+0B47    34 EF 95 0B     	DW	REGHL,RNHL
+0B4B    27 02           	DB	27H,2		; "HL'"
+0B4D                    ;;	DB	'\'',2		; "HL'"
+0B4D    3C EF B5 0B     	DW	REGHLX,RNHLX
+0B51
+0B51    00 00           	DB	00H,0
+0B53
+0B53                    RNTABL:
+0B53    00 01           	DB	00H,1		; "L"
+0B55    34 EF 9A 0B     	DW	REGHL,RNL
+0B59    27 01           	DB	27H,1		; "L'"
+0B5B                    ;;	DB	'\'',1		; "L'"
+0B5B    3C EF BC 0B     	DW	REGHLX,RNLX
+0B5F
+0B5F    00 00           	DB	00H,0
+0B61
+0B61                    RNTABI:
+0B61    00 01           	DB	00H,1		; "I"
+0B63    46 EF CE 0B     	DW	REGI,RNI
+0B67    58 02           	DB	'X',2		; "IX"
+0B69    3E EF C2 0B     	DW	REGIX,RNIX
+0B6D    59 02           	DB	'Y',2		; "IY"
+0B6F    40 EF C5 0B     	DW	REGIY,RNIY
+0B73
+0B73    00 00           	DB	00H,0
+0B75
+0B75                    RNTABP:
+0B75    43 02           	DB	'C',2		; "PC"
+0B77    44 EF CB 0B     	DW	REGPC,RNPC
+0B7B
+0B7B    00 00           	DB	00H,0
+0B7D
+0B7D                    RNTABS:
+0B7D    50 02           	DB	'P',2		; "SP"
+0B7F    42 EF C8 0B     	DW	REGSP,RNSP
+0B83
+0B83    00 00           	DB	00H,0
+0B85
+0B85    41 00           RNA:	DB	"A",00H
+0B87    42 43 00        RNBC:	DB	"BC",00H
+0B8A    42 00           RNB:	DB	"B",00H
+0B8C    43 00           RNC:	DB	"C",00H
+0B8E    44 45 00        RNDE:	DB	"DE",00H
+0B91    44 00           RND:	DB	"D",00H
+0B93    45 00           RNE:	DB	"E",00H
+0B95    48 4C 00        RNHL:	DB	"HL",00H
+0B98    48 00           RNH:	DB	"H",00H
+0B9A    4C 00           RNL:	DB	"L",00H
+0B9C    46 00           RNF:	DB	"F",00H
+0B9E    41 27 00        RNAX:	DB	"A'",00H
+0BA1    42 43 27 00     RNBCX:	DB	"BC'",00H
+0BA5    42 27 00        RNBX:	DB	"B'",00H
+0BA8    43 27 00        RNCX:	DB	"C'",00H
+0BAB    44 45 27 00     RNDEX:	DB	"DE'",00H
+0BAF    44 27 00        RNDX:	DB	"D'",00H
+0BB2    45 27 00        RNEX:	DB	"E'",00H
+0BB5    48 4C 27 00     RNHLX:	DB	"HL'",00H
+0BB9    48 27 00        RNHX:	DB	"H'",00H
+0BBC    4C 27 00        RNLX:	DB	"L'",00H
+0BBF    46 27 00        RNFX:	DB	"F'",00H
+0BC2    49 58 00        RNIX:	DB	"IX",00H
+0BC5    49 59 00        RNIY:	DB	"IY",00H
+0BC8    53 50 00        RNSP:	DB	"SP",00H
+0BCB    50 43 00        RNPC:	DB	"PC",00H
+0BCE    49 00           RNI:	DB	"I",00H
+0BD0    52 00           RNR:	DB	"R",00H
+0BD2
+0BD2                    ;;;
+0BD2                    ;;; Cold start for device dependent
+0BD2                    ;;;
+0BD2                    INIT:
+0BD2    C9              	RET
+0BD3
+0BD3                    ;;;
+0BD3                    ;;; Console drivers
+0BD3                    ;;;
+0BD3
+0BD3                    CONIN:
+0BD3    3A 01 FF        	LD	A,(UARTCR)
+0BD6    CB 47           	BIT	0,A
+0BD8    28 F9           	JR	Z,CONIN
+0BDA    3A 00 FF        	LD	A,(UARTDR)
+0BDD    C9              	RET
+0BDE
+0BDE                    CONST:
+0BDE    3A 01 FF        	LD	A,(UARTCR)
+0BE1    CB 47           	BIT	0,A
+0BE3    C9              	RET
+0BE4
+0BE4                    CONOUT:
+0BE4    F5              	PUSH	AF
+0BE5    3A 01 FF        PCST1:	LD	A,(UARTCR)
+0BE8    CB 4F           	BIT	1,A
+0BEA    28 F9           	JR	Z,PCST1
+0BEC    F1              	POP	AF
+0BED    32 00 FF        	LD	(UARTDR),A
+0BF0    C9              	RET
+0BF1
+0BF1    FF FF FF FF     	ds	BASIC_TOP - $, 0ffH
+0BF5    FF FF FF FF
+0BF9    FF FF FF FF
+0BFD    FF FF FF FF
+0C01    FF FF FF FF
+0C05    FF FF FF FF
+0C09    FF FF FF FF
+0C0D    FF FF FF FF
+0C11    FF FF FF FF
+0C15    FF FF FF FF
+0C19    FF FF FF FF
+0C1D    FF FF FF FF
+0C21    FF FF FF FF
+0C25    FF FF FF FF
+0C29    FF FF FF FF
+0C2D    FF FF FF FF
+0C31    FF FF FF FF
+0C35    FF FF FF FF
+0C39    FF FF FF FF
+0C3D    FF FF FF FF
+0C41    FF FF FF FF
+0C45    FF FF FF FF
+0C49    FF FF FF FF
+0C4D    FF FF FF FF
+0C51    FF FF FF FF
+0C55    FF FF FF FF
+0C59    FF FF FF FF
+0C5D    FF FF FF FF
+0C61    FF FF FF FF
+0C65    FF FF FF FF
+0C69    FF FF FF FF
+0C6D    FF FF FF FF
+0C71    FF FF FF FF
+0C75    FF FF FF FF
+0C79    FF FF FF FF
+0C7D    FF FF FF FF
+0C81    FF FF FF FF
+0C85    FF FF FF FF
+0C89    FF FF FF FF
+0C8D    FF FF FF FF
+0C91    FF FF FF FF
+0C95    FF FF FF FF
+0C99    FF FF FF FF
+0C9D    FF FF FF FF
+0CA1    FF FF FF FF
+0CA5    FF FF FF FF
+0CA9    FF FF FF FF
+0CAD    FF FF FF FF
+0CB1    FF FF FF FF
+0CB5    FF FF FF FF
+0CB9    FF FF FF FF
+0CBD    FF FF FF FF
+0CC1    FF FF FF FF
+0CC5    FF FF FF FF
+0CC9    FF FF FF FF
+0CCD    FF FF FF FF
+0CD1    FF FF FF FF
+0CD5    FF FF FF FF
+0CD9    FF FF FF FF
+0CDD    FF FF FF FF
+0CE1    FF FF FF FF
+0CE5    FF FF FF FF
+0CE9    FF FF FF FF
+0CED    FF FF FF FF
+0CF1    FF FF FF FF
+0CF5    FF FF FF FF
+0CF9    FF FF FF FF
+0CFD    FF FF FF FF
+0D01    FF FF FF FF
+0D05    FF FF FF FF
+0D09    FF FF FF FF
+0D0D    FF FF FF FF
+0D11    FF FF FF FF
+0D15    FF FF FF FF
+0D19    FF FF FF FF
+0D1D    FF FF FF FF
+0D21    FF FF FF FF
+0D25    FF FF FF FF
+0D29    FF FF FF FF
+0D2D    FF FF FF FF
+0D31    FF FF FF FF
+0D35    FF FF FF FF
+0D39    FF FF FF FF
+0D3D    FF FF FF FF
+0D41    FF FF FF FF
+0D45    FF FF FF FF
+0D49    FF FF FF FF
+0D4D    FF FF FF FF
+0D51    FF FF FF FF
+0D55    FF FF FF FF
+0D59    FF FF FF FF
+0D5D    FF FF FF FF
+0D61    FF FF FF FF
+0D65    FF FF FF FF
+0D69    FF FF FF FF
+0D6D    FF FF FF FF
+0D71    FF FF FF FF
+0D75    FF FF FF FF
+0D79    FF FF FF FF
+0D7D    FF FF FF FF
+0D81    FF FF FF FF
+0D85    FF FF FF FF
+0D89    FF FF FF FF
+0D8D    FF FF FF FF
+0D91    FF FF FF FF
+0D95    FF FF FF FF
+0D99    FF FF FF FF
+0D9D    FF FF FF FF
+0DA1    FF FF FF FF
+0DA5    FF FF FF FF
+0DA9    FF FF FF FF
+0DAD    FF FF FF FF
+0DB1    FF FF FF FF
+0DB5    FF FF FF FF
+0DB9    FF FF FF FF
+0DBD    FF FF FF FF
+0DC1    FF FF FF FF
+0DC5    FF FF FF FF
+0DC9    FF FF FF FF
+0DCD    FF FF FF FF
+0DD1    FF FF FF FF
+0DD5    FF FF FF FF
+0DD9    FF FF FF FF
+0DDD    FF FF FF FF
+0DE1    FF FF FF FF
+0DE5    FF FF FF FF
+0DE9    FF FF FF FF
+0DED    FF FF FF FF
+0DF1    FF FF FF FF
+0DF5    FF FF FF FF
+0DF9    FF FF FF FF
+0DFD    FF FF FF FF
+0E01    FF FF FF FF
+0E05    FF FF FF FF
+0E09    FF FF FF FF
+0E0D    FF FF FF FF
+0E11    FF FF FF FF
+0E15    FF FF FF FF
+0E19    FF FF FF FF
+0E1D    FF FF FF FF
+0E21    FF FF FF FF
+0E25    FF FF FF FF
+0E29    FF FF FF FF
+0E2D    FF FF FF FF
+0E31    FF FF FF FF
+0E35    FF FF FF FF
+0E39    FF FF FF FF
+0E3D    FF FF FF FF
+0E41    FF FF FF FF
+0E45    FF FF FF FF
+0E49    FF FF FF FF
+0E4D    FF FF FF FF
+0E51    FF FF FF FF
+0E55    FF FF FF FF
+0E59    FF FF FF FF
+0E5D    FF FF FF FF
+0E61    FF FF FF FF
+0E65    FF FF FF FF
+0E69    FF FF FF FF
+0E6D    FF FF FF FF
+0E71    FF FF FF FF
+0E75    FF FF FF FF
+0E79    FF FF FF FF
+0E7D    FF FF FF FF
+0E81    FF FF FF FF
+0E85    FF FF FF FF
+0E89    FF FF FF FF
+0E8D    FF FF FF FF
+0E91    FF FF FF FF
+0E95    FF FF FF FF
+0E99    FF FF FF FF
+0E9D    FF FF FF FF
+0EA1    FF FF FF FF
+0EA5    FF FF FF FF
+0EA9    FF FF FF FF
+0EAD    FF FF FF FF
+0EB1    FF FF FF FF
+0EB5    FF FF FF FF
+0EB9    FF FF FF FF
+0EBD    FF FF FF FF
+0EC1    FF FF FF FF
+0EC5    FF FF FF FF
+0EC9    FF FF FF FF
+0ECD    FF FF FF FF
+0ED1    FF FF FF FF
+0ED5    FF FF FF FF
+0ED9    FF FF FF FF
+0EDD    FF FF FF FF
+0EE1    FF FF FF FF
+0EE5    FF FF FF FF
+0EE9    FF FF FF FF
+0EED    FF FF FF FF
+0EF1    FF FF FF FF
+0EF5    FF FF FF FF
+0EF9    FF FF FF FF
+0EFD    FF FF FF FF
+0F01    FF FF FF FF
+0F05    FF FF FF FF
+0F09    FF FF FF FF
+0F0D    FF FF FF FF
+0F11    FF FF FF FF
+0F15    FF FF FF FF
+0F19    FF FF FF FF
+0F1D    FF FF FF FF
+0F21    FF FF FF FF
+0F25    FF FF FF FF
+0F29    FF FF FF FF
+0F2D    FF FF FF FF
+0F31    FF FF FF FF
+0F35    FF FF FF FF
+0F39    FF FF FF FF
+0F3D    FF FF FF FF
+0F41    FF FF FF FF
+0F45    FF FF FF FF
+0F49    FF FF FF FF
+0F4D    FF FF FF FF
+0F51    FF FF FF FF
+0F55    FF FF FF FF
+0F59    FF FF FF FF
+0F5D    FF FF FF FF
+0F61    FF FF FF FF
+0F65    FF FF FF FF
+0F69    FF FF FF FF
+0F6D    FF FF FF FF
+0F71    FF FF FF FF
+0F75    FF FF FF FF
+0F79    FF FF FF FF
+0F7D    FF FF FF FF
+0F81    FF FF FF FF
+0F85    FF FF FF FF
+0F89    FF FF FF FF
+0F8D    FF FF FF FF
+0F91    FF FF FF FF
+0F95    FF FF FF FF
+0F99    FF FF FF FF
+0F9D    FF FF FF FF
+0FA1    FF FF FF FF
+0FA5    FF FF FF FF
+0FA9    FF FF FF FF
+0FAD    FF FF FF FF
+0FB1    FF FF FF FF
+0FB5    FF FF FF FF
+0FB9    FF FF FF FF
+0FBD    FF FF FF FF
+0FC1    FF FF FF FF
+0FC5    FF FF FF FF
+0FC9    FF FF FF FF
+0FCD    FF FF FF FF
+0FD1    FF FF FF FF
+0FD5    FF FF FF FF
+0FD9    FF FF FF FF
+0FDD    FF FF FF FF
+0FE1    FF FF FF FF
+0FE5    FF FF FF FF
+0FE9    FF FF FF FF
+0FED    FF FF FF FF
+0FF1    FF FF FF FF
+0FF5    FF FF FF FF
+0FF9    FF FF FF FF
+0FFD    FF FF FF
+1000                    ;	ORG	BASIC_TOP
+1000
+1000                    ;;;
+1000                    ;;; RAM area
+1000                    ;;;
+1000
+1000                    	;;
+1000                    	;; Work Area
+1000                    	;;
+1000
+1000                    	ORG	WORK_B
+EF00
+EF00    00 00 00 00     INBUF:	DS	BUFLEN	; Line input buffer
+EF04    00 00 00 00
+EF08    00 00 00 00
+EF0C    00 00 00 00
+EF10    00 00 00 00
+EF14    00 00 00 00
+EF18    00 00 00 00
+EF1C    00 00 00 00
+EF20    00 00           DSADDR:	DS	2	; Dump start address
+EF22    00 00           DEADDR:	DS	2	; Dump end address
+EF24    00              DSTATE:	DS	1	; Dump state
+EF25    00 00           GADDR:	DS	2	; Go address
+EF27    00 00           SADDR:	DS	2	; Set address
+EF29    00              HEXMOD:	DS	1	; HEX file mode
+EF2A    00              RECTYP:	DS	1	; Record type
+EF2B    00              PSPEC:	DS	1	; Processor spec.
+EF2C    00              SIZE:	DS	1	; I/O Size 00H,'W','S'
+EF2D    00              IOPAGE:	DS	1	; I/O Page (for Z280)
+EF2E
+EF2E                    REG_B:
+EF2E    00 00           REGAF:	DS	2
+EF30    00 00           REGBC:	DS	2
+EF32    00 00           REGDE:	DS	2
+EF34    00 00           REGHL:	DS	2
+EF36    00 00           REGAFX:	DS	2		; Register AF'
+EF38    00 00           REGBCX:	DS	2
+EF3A    00 00           REGDEX:	DS	2
+EF3C    00 00           REGHLX:	DS	2		; Register HL'
+EF3E    00 00           REGIX:	DS	2
+EF40    00 00           REGIY:	DS	2
+EF42    00 00           REGSP:	DS	2
+EF44    00 00           REGPC:	DS	2
+EF46    00              REGI:	DS	1
+EF47    00              REGR:	DS	1
+EF48                    REG_E:
